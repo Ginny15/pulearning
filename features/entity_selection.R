@@ -44,19 +44,7 @@ temp = temp %>%  group_by(entity,DBID) %>%  mutate(count.entity.dbid= n())
 temp = temp %>%  group_by(DBID) %>%  mutate(count.dbid= n()) 
 dbid.count = unique(temp[,c(1,5)])
 
-# # ####
-# nerSizeDistribution = data.frame(nerSize = 1: max(dbid.count$count.dbid),
-#                                  count = sapply(1: max(dbid.count$count.dbid),
-#                                                 function(i) nrow(dbid.count[which(dbid.count$count.dbid == i),])))
-# cachedInfo.i = solr_all(q = "DBID:136093",base=url, fl='*,[cached]', raw=TRUE, verbose=FALSE, rows=99999)
-# cachedInfo.i = solr_parse(cachedInfo.i,'list')$response$docs
-# ner.136093  = cachedInfo.i[[1]]$ner
-# length(ner.136093[which(sapply(ner.136093,function(x) !strsplit(x,':')[[1]][1] %in% c('CARDINAL','DATE','TIME')))])
-# content.136093  = cachedInfo.i[[1]]$`cm:content`
-# write(content.136093)
-# temp = unique(temp)
 
-# ####
 NER.LIST = NER.LIST[sapply(NER.LIST, function(x) !isempty(x))]
  
 # cases with no entity
