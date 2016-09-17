@@ -15,7 +15,6 @@ for(i in 1:L){
 summary(DBID.1548);
 #  omit NA's
 DBID.1548.new = DBID.1548[!is.na(DBID.1548)]
-#length(DBID.1548.new) #  3577
 #write.csv(DBID.1548.new,'dbid.1548.csv')
 
 # query = 'TYPE:"{http://www.alfresco.com/model/actsearch2/salesforce/1.0}Case"'
@@ -38,23 +37,7 @@ rm(query.need);rm(i,L,Q1,search.i)
 # result.search = solr_all(q= query, base=url, fl='*,[cached]', raw=TRUE, verbose=FALSE, rows=99999)
 cachedInfo = solr_parse(solr_all(q= query, base=url, fl='*,[cached]', raw=TRUE, verbose=FALSE, rows=99999),'list')$response$docs
 featureNames = names(cachedInfo[[1]])
-# [1] "id"x                        "_version_" x                  "DBID" x                      "LID" x                       
-# [5] "INTXID" x                    "DOC_TYPE" = Node  x             "ACLID" x                   "TYPE"  x                     
-# [9] "ASPECT"    x                  "ISNODE"        x              "TENANT"  x                    "PATH"    
-# [13] "SITE" x                       "NPATH"                       "PNAME" x                      "ANCESTOR"  x                 
-# [17] "PARENTASSOCCRC" x             "OWNER"   x                    "PARENT"   x                   "PRIMARYPARENT" x             
-# [21] "PRIMARYASSOCTYPEQNAME"  x     "PRIMARYASSOCQNAME"x           "ASSOCTYPEQNAME" x             "QNAME"  x 有具体后缀的  
-# [25] "PROPERTIES"x                  "FIELDS"  x                    "sf:issueType"                "cm:created"  time               
-# [29] "sf:productType"              "sf:contactName"              "cm:description"   case number           "cm:creator"  x               
-# [33] "sys:node-uuid"  info missing unique   "cm:name"  =case number   "sys:store-identifier"   info missing     "cm:content.docid" info missing          
 
-# [37] "cm:content.size"             "cm:content.locale"   2        "cm:content.mimetype"   x      "cm:content.encoding" x       
-# [41] "cm:content"                  "ner"     "cm:content.tr_status"   info missing     "cm:content.tr_ex"     info missing       
-# [45] "cm:content.tr_time"  info missing    "FTSSTATUS" x                  "sf:partnerCollaborator"      "cm:versionLabel" x           
-# [49] "cm:autoVersion" x             "sf:jiraNumbers" info missing       "cm:initialVersion" x          "act2:type"  x                  
-# [53] "sf:isRFA"     ALL 1               "sf:caseId" info missing       "cm:autoVersionOnUpdateProps" x  "cm:title"                   
-# [57] "sf:issueSubtype"             "sys:store-protocol" info missing 1level     "sys:node-dbid"               "sys:locale"   x              
-# [61] "cm:modifier"  x               "cm:modified"  time               "sf:datetimeOpened"   time        "sf:accountName" 
 solr_facet(base=url,facet.limit=100,verbose=FALSE, facet.field = featureNames[12],q='TYPE:"{http://www.alfresco.com/model/actsearch2/salesforce/1.0}Case"')$facet_field
 
 ###  extracting features ####
@@ -168,7 +151,7 @@ for (i in 1:nrow(NER.DF)) {
   if(strsplit(NER.DF[i,1],split = ":")[[1]][1] %in% c('CARDINAL','DATE','TIME')) NER.DF[i,2] <- NA
 }
 NER.DF.NEW = NER.DF[!is.na(NER.DF$COUNT),]
-# = 7102
+ 
 NER.DF.NEW.1 = NER.DF.NEW[which(NER.DF.NEW$COUNT>500),]
 NER.ds = data.frame(dummy(NER.DF.NEW.1$NER))
 NER.ds.new = as.data.frame(matrix(0, ncol = ncol(NER.ds), nrow = length(NER.LIST)))
@@ -230,33 +213,6 @@ for (j in 1:98){
   tf.idf[,j] = term.frequency[,j] * log(size/document.frequency[j])
 }
 
-###  splitting time sequances into year, month, day and hour ####
-data = cbind(DBID,PNAME.2,sf.issueType,cm.createdTime,sf.productType,Size,cm.content.locale,
-             sf.isRFA,sf.issueSubType,sys.locale,cm.modified,cm.modifier,sf.datetimeOpened,
-             content.tr_time)
-data = data.frame(data[-dbid.no.entity.idx,])
-for(i in 1:ncol(data)){
-  data[[i]]=as.character(data[[i]])
-}
-TimeSplit = sapply(data[['cm.createdTime']][1:nrow(data)], function(x) strsplit(x, split = 'T|:|-')[[1]])
-data$createdYear = TimeSplit[1,]
-data$createdMonth = TimeSplit[2,]
-data$createdDay = TimeSplit[3,]
-data$createdHour = TimeSplit[4,]
-
-TimeSplit = sapply(data[['cm.modified']][1:nrow(data)], function(x) strsplit(x, split = 'T|:|-')[[1]])
-data$modifiedYear = TimeSplit[1,]
-data$modifiedMonth = TimeSplit[2,]
-data$modifiedDay = TimeSplit[3,]
-data$modifiedHour = TimeSplit[4,]
-
-TimeSplit = sapply(data[['sf.datetimeOpened']][1:nrow(data)], function(x) strsplit(x, split = 'T|:|-')[[1]])
-data$openedYear = TimeSplit[1,]
-data$openedMonth = TimeSplit[2,]
-data$openedDay = TimeSplit[3,]
-data$openedHour = TimeSplit[4,]
-
-
 ###  shuffle, split data ####
 #################################################################
 data$sf.datetimeOpened<-NULL;data$cm.createdTime<-NULL;data$cm.modified<-NULL
@@ -268,10 +224,7 @@ for (i in 1:24) {
     data[[i]] = as.factor(data[[i]])
 }
 
-# sf.issueType  NA  838
-# sf.contactName NA 753
-# sf.issueSubType NA 2655
-# sf.accountName NA 683
+#imuting NA values with mode value
 for (col in c('sf.issueType','sf.issueSubType','sf.productType')){
   modeName = names(which.max(table(data[[col]])))
   for (i in 1: nrow(data)){
@@ -281,14 +234,6 @@ for (col in c('sf.issueType','sf.issueSubType','sf.productType')){
 summary(data)
 
 data = cbind(data,tf.idf)
-
-
-
-data.2=data;data.1=data[,1:24];data=NULL
-
-data=data.1[,c(1:10,24)]
-
-
 
 score.search = solr_all(q= 'FINGERPRINT:1548', base=url, fl='*,DBID,score', verbose=FALSE, rows=99999)
 score.df = data.frame(DBID = score.search$DBID, score = score.search$score)
@@ -373,105 +318,3 @@ prob.fx.1 = length(pred.test[which(pred.test=='Y')])/length(pred.test)
 prob.r^2/prob.fx.1   #5.4
 
 
-###  Cosine-Rocchio (CR) Technique  ####
-########################################
-PN = NULL; RN= NULL;
-# NER.ds is the data frame for TF_IDF scheme
-norm(NER.ds[1,],'2')
-V.p = apply(P[,23:77], 1,function(x) sum(x/norm(x,'2')))/nrow(P)
-normVp = norm(V.p,'2')
-cos.Vp.d = apply(U[,23:77],1,function(x) x %*% V.p/(norm(x,'2')*normVp))
-cos.DF = data.frame(DBID=P$DBID, cosV = cos.Vp.d)
-cos.DF = cos.DF[with(cos.DF, order(-cos.Vp.d)), ]
-defaultPosition = floor((1-0.05)*nrow(P))
-omiga = cos.DF$cosV[defaultPosition]
-for (i in 1: nrow(U)){
-  if(cos.DF$cosV < omiga) PN=append(PN,U[i,])
-}
-alpha = 16; beta =4;
-c.p.1 = apply(P[,23:77], 1,function(x) sum(x/norm(x,'2')))/nrow(P) 
-c.p.2 = apply(PN[,23:77], 1,function(x) sum(x/norm(x,'2')))/nrow(PN)
-c.p = alpha*c.p.1- beta*c.p.2
-c.pn = alpha*c.p.2 - beta*c.p.1
-normCP = norm(c.p, '2'); normCPN= norm(c.pn,'2');
-cos.pn.d = apply(U[,23:77],1,function(x) x %*% c.pn/(norm(x,'2')*normCPN))
-cos.p.d = apply(U[,23:77],1,function(x) x %*% c.p/(norm(x,'2')*normCP))
-
-for (i in 1: nrow(U)){
-  if (cos.pn.d>cos.p.d) RN = append(RN,U[i,])
-}
-#  term token table ####
-url.json= "http://localhost:8986/solr/LSH/terms?wt=json&terms.regex=\\{en\\}[0-9]%2B&terms.fl=content@s__lt@{http://www.alfresco.org/model/content/1.0}content&terms.limit=100"
-newcache = fromJSON(readLines(url.json))$terms$`content@s__lt@{http://www.alfresco.org/model/content/1.0}content`
-
-
-url.json= "http://localhost:8986/solr/LSH/terms?wt=json&terms.fl=TYPE&terms.limit=-1"
-newcache = fromJSON(readLines(url.json))$terms$TYPE
-names=character();j=1
-for(i in seq(1,length(newcache),2)){
-  names[j]=newcache[[i]];  j=j+1
-}
-names = sapply(names, function(x) substr(x,5,1000))
-counts=numeric(93434);j=1
-for(i in seq(2,length(newcache),2)){
-  counts[j]=newcache[[i]];  j=j+1
-}
-
-TermTable=data.frame(term = names,termCount = counts)
-
-
-contentTokens=readLines('http://localhost:8986/solr/LSH/terms?terms.fl=content@s__lt@{http://www.alfresco.org/model/content/1.0}content&wt=JSON&terms.limit=100')
-
-library(XML)
-xmlfile = 
-  xmlTreeParse("http://localhost:8986/solr/LSH/terms?terms.regex=\\{en\\}[0-9]%2B&terms.fl=content@s__lt@{http://www.alfresco.org/model/content/1.0}content&terms.limit=100") 
-xmltop = xmlRoot(xmlfile)
-xmlfile
-readfiles = readLines("http://localhost:8986/solr/LSH/terms?terms.regex=\\{en\\}[0-9]%2B&terms.fl=content@s__lt@{http://www.alfresco.org/model/content/1.0}content&terms.limit=100")
-cat(readfiles[3])
-readfiles[grep("</lst>", readfiles)]
-
-plantcat <- 
-  xmlApply(xmlfile$doc$children$response, function(x) xmlValue(x))
-xmlfile2 = xmlParse('http://localhost:8986/solr/LSH/terms?terms.fl=content@s__lt@{http://www.alfresco.org/model/content/1.0}content&terms.limit=100')
-xmlRoot(xmlfile2)
-# HIDING CODES ####
-# url.2 = 'http://localhost:8986/solr/LSH/afts'
-# 
-# url.3 = 'http://localhost:8986/solr/LSH'
-# 
-# solr_mlt(q = "FINGERPRINT:2289",mlt.fl = "TYPE", base = url,rows = 100)
-# solr_all(q='*:*',base=url.2,verbose=TRUE,qt = '/terms',terms.fl='the')
-# 
-# http://localhost:8983/solr/collection1/select?qt=/terms&terms.fl=INDUSTRY&terms.prefix=P&terms=true
-
-# termLists <- vector(mode = "list", length = length(content))
-# for (i in 1:length(content)){
-#   elementsList = strsplit(content[i], ' ')
-#   j = 1
-#   for(elements in elementsList){
-#     if (elements !="" & elements !=""){
-#       termLists[[i]][j] = elements; j=j+1
-#     }}
-#   table(elementsList.new)
-# }
-content.split = strsplit(content[1],split = "[-(),:.!?\\-\\|]|\n|\r| |(\\d+)|\t|/")[[1]]
-content.split[content.split != ""]
-content.split = tolower(content.split[content.split != ""])
-table(content.split) 
-
-library(rjson)
-fromJSON(readLines('http://localhost:8986/solr/LSH/query?q=FINGERPRINT'))
-
-library(XML)
-xmlfile = xmlTreeParse('http://localhost:8986/solr/LSH/query?q=FINGERPRINT&wt=JSON' ) 
-xmltop = xmlRoot(xmlfile)
-xmlApply(xmlfile$doc$children$response, function(x) xmlValue(x))
-
-readL = readLines('http://localhost:8986/solr/LSH/query?q=fingerprint&rows=100')
-dbid.3 = character();j=1
-for (i in seq(12,length(readL),4)){
-  dbid.3[j]=readL[i];j=j+1
-}
-dbid.3 = data.frame(dbid = as.numeric(sapply(dbid.3,function(x) strsplit(x, ':|}')[[1]][2])))
-intersect(dbid.3$sapply.dbid.3..function.x..strsplit.x..........1...2..,dbid.1$DBID)
