@@ -1,25 +1,3 @@
-timeeee = solr_search(q='FINGERPRINT:1548 AND TYPE:"{http://www.alfresco.com/model/actsearch2/salesforce/1.0}Case"
-', base=url, fl='*,DBID,score', verbose=FALSE,rows = 9999)
-DBID.0808 = timeeee$DBID
-intersect(DBID.0808,test[which(pred.test=='Y'),]$DBID)
-intersect(DBID.0808,DBID.1548.new)
-cbind(DBID.1548.new
-score.0808 = timeeee$score
-dataframe.0808 = data.frame(DBID=DBID.0808,score = score.0808)
-
-fit.xgb.0808  <- train(label~., data = data.step.2[,-1], method='xgbTree',trControl=control)
-
-DBID.unclassified = DBID[!DBID %in% DBID.1548.new]
-DBID.unclassified.sample = DBID.unclassified[sample(length(DBID.unclassified),10000)]
-setwd('/Users/xhu/Documents/solr_data/')
-for (i in 1: length(cachedInfo)){
-  dbid.i = cachedInfo[[i]]$DBID
-  if(dbid.i %in% DBID.1548.new) {
-    write(cachedInfo[[i]]$`cm:content`,paste0('positive/',dbid.i,'.txt'))}
-  else {
-    write(cachedInfo[[i]]$`cm:content`,paste0('unclassified/',dbid.i,'.txt'))}
-}
-
 for ( i in 1:length(cachedInfo)){
   rrr = strsplit(cachedInfo[[2629]]$`cm:content`, split = "[-(),:.!?\\-\\|]|\n|\r| |(\\d+)|\t|/|_")[[1]]
   wordStem(rrr[rrr != ""])
